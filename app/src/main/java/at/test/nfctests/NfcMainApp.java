@@ -79,12 +79,6 @@ public class NfcMainApp extends ActionBarActivity {
         nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         client = new JavaClient();
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.dialog_reader_title);
-        builder.setView(getLayoutInflater().inflate(R.layout.dialog_reader, null));
-        readerDialog = builder.create();
-        readerDialog.hide();
     }
 
     @Override
@@ -114,10 +108,15 @@ public class NfcMainApp extends ActionBarActivity {
     /**
      * This Method starts/stops the NFC reader mode of the device.
      */
-    public void readerMode() {
+    public void readerMode(final String requestId) {
         TextView statusView = (TextView) findViewById(R.id.status_status);
 
         if(!isInReaderMode) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setView(getLayoutInflater().inflate(R.layout.dialog_reader, null));
+            readerDialog = builder.create();
+            readerDialog.show();
+
             nfcAdapter.enableReaderMode(this, new ReaderCallback() {
                 @Override
                 public void onTagDiscovered(Tag tag) {
@@ -135,40 +134,34 @@ public class NfcMainApp extends ActionBarActivity {
 
                     currentTag = tag;
 
-                    //TODO: Define a message for "Tag detected" which the Server understands!
-                    client.sendMessage("Tag detected");
-                    Log.w("NFC-APP", "I appear right before the new image was set!");
-                    final TextView textView = (TextView) findViewById(R.id.dialog_reader_text);
-                    final ImageView imageView = (ImageView) findViewById(R.id.dialog_reader_image);
-                    (new Thread(new Runnable() {
+                    final ImageView image = (ImageView) readerDialog.findViewById(R.id.dialog_reader_image);
+                    final TextView text = (TextView) readerDialog.findViewById(R.id.dialog_reader_text);
+
+                    image.post(new Runnable() {
                         @Override
                         public void run() {
-                            textView.setText("Tag detected!");
-                            imageView.setImageDrawable(getDrawable(R.drawable.ok));
+                            image.setBackground(getDrawable(R.drawable.ok));
+                            text.setText("Found NFC Tag!\nKeep it attached!");
                         }
-                    })).start();
-                    Log.w("NFC-APP", "I appear after the new image was set!");
+                    });
+
+                    client.sendNFCDetectEvent(readerDialog, tag, null);
                 }
             }, 1, null);
-            //TODO: Define message for "Reader Mode successfully started"
-            client.sendMessage("Reader Mode successfully started");
+            client.sendSetNFCModeResponse(requestId, null);
             Log.i("NFC-APP", "Reader mode was started!");
-
-            readerDialog.show();
 
             statusView.setText("reader mode");
             isInReaderMode=true;
         }
         else {
             nfcAdapter.disableReaderMode(this);
-
-            //TODO: Define message for "Reader Mode successfully ended"
             readerDialog.hide();
-            client.sendMessage("Reader Mode successfully ended");
             Log.i("NFC-App", "Reader mode was ended!");
 
             statusView.setText("default mode");
             isInReaderMode=false;
+            readerDialog.dismiss();
         }
     }
 
@@ -178,7 +171,7 @@ public class NfcMainApp extends ActionBarActivity {
         String pass = ((TextView)findViewById(R.id.login_pass)).getText().toString();
         TextView loginNotification = (TextView) findViewById(R.id.login_notification);
 
-        boolean worked = client.login(user, pass);
+        boolean worked = client.sendOpenSessionRequest(user, pass, null);
 
         if(worked) {
             setContentView(R.layout.activity_status);
@@ -186,7 +179,7 @@ public class NfcMainApp extends ActionBarActivity {
             getMenuInflater().inflate(R.menu.menu_status, menu);
             InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-            readerMode();
+            readerMode(null);
         }
         else {
             loginNotification.setTextColor(Color.RED);
@@ -200,7 +193,10 @@ public class NfcMainApp extends ActionBarActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         TextView loginNotification = (TextView) findViewById(R.id.login_notification);
 
-        client.logout();
+        client.sendCloseSessionRequest(null);
+        if(isInReaderMode) {
+            readerMode(null);
+        }
         loginNotification.setTextColor(Color.GREEN);
         loginNotification.setText("Successfully logged out!");
     }

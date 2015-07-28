@@ -1,6 +1,12 @@
 package at.test.nfctests;
 
+import android.app.AlertDialog;
+import android.nfc.Tag;
+import android.nfc.tech.IsoDep;
+import android.support.annotation.Nullable;
 import android.util.Log;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import java.security.MessageDigest;
 
@@ -8,14 +14,84 @@ import java.security.MessageDigest;
  * Created by mschaefer on 24/07/15.
  */
 public class JavaClient {
-//TODO: Define Communication Protocols
-
     /**
      * This Method sends a message to the client.
      * @param msg The message to be sent
      */
-    public void sendMessage(String msg) {
-        //TODO: Send Message
+    private void sendMessage(String msg) {
+        //TODO: Send the Request/Response
+    }
+
+    public boolean sendOpenSessionRequest(String user, String pass, @Nullable String fault) {
+        //TODO: Send OpenSessionRequest
+        return user.equals("a");
+    }
+
+    public void sendCloseSessionRequest(@Nullable String fault) {
+        //TODO: Send CloseSessionRequest
+    }
+
+    public void sendClientIdleEvent(@Nullable String fault) {
+        //TODO: Send ClientIdleEvent
+    }
+
+    public void sendNFCDetectEvent(AlertDialog readerDialog, Tag tag, @Nullable String fault) {
+        //TODO: Send NFCDetectEvent and communicate with tag
+
+        //Placeholder procedure
+        boolean stop = false;
+        IsoDep isoDep = IsoDep.get(tag);
+        try {
+            isoDep.connect();
+        }
+        catch (Exception e) {
+            stop = true;
+        }
+
+        while(!stop) {
+            try {
+                byte[] APDUCommand = {
+                        (byte) 0x00, // CLA Class
+                        (byte) 0xA4, // INS Instruction
+                        (byte) 0x04, // P1  Parameter 1
+                        (byte) 0x00, // P2  Parameter 2
+                        (byte) 0x0A, // Length
+                        0x63,0x64,0x63,0x00,0x00,0x00,0x00,0x32,0x32,0x31 // AID
+                };
+                isoDep.transceive(APDUCommand);
+            } catch (Exception e) {
+                stop = true;
+            }
+        }
+        final AlertDialog readerDialogFinal = readerDialog;
+        final ImageView image = (ImageView) readerDialog.findViewById(R.id.dialog_reader_image);
+        final TextView text = (TextView) readerDialog.findViewById(R.id.dialog_reader_text);
+
+        Log.w("NFC-CLIENT", "Tag disconnected!");
+
+        image.post(new Runnable() {
+            @Override
+            public void run() {
+                image.setBackground(readerDialogFinal.getContext().getDrawable(R.drawable.nfc_logo_blue));
+                text.setText(R.string.dialog_reader_message);
+            }
+        });
+    }
+
+    public void sendAPDUExchangeRequest(byte[] apdu, @Nullable String fault) {
+        //TODO: Send APDUExchangeRequest
+    }
+
+    public void sendSetNFCModeResponse(String requestId, @Nullable String fault) {
+        //TODO: Send SetNFCModeResponse
+    }
+
+    public void sendAPDUExchangeRequestAck(String requestId, @Nullable String fault) {
+        //TODO: Send APDUExchangeRequestAck
+    }
+
+    public void sendAPDUExchangeResponseAck(String requestId, @Nullable String fault) {
+
     }
 
     /**
@@ -39,17 +115,6 @@ public class JavaClient {
     }
 
     /**
-     * This Method sends given user credentials to the server.
-     * @param user The username to be sent.
-     * @param pass The password to be sent.
-     * @return true if the login was successful, false otherwise.
-     */
-    public boolean login(String user, String pass) {
-        //TODO: Send Login credentials and return true if it worked and false otherwise
-        return user.equals("a");
-    }
-
-    /**
      * This Method generates a sha256 hash of the given String
      * @param base A String value to generate the has from.
      * @return The generated sha256 hash. null if an exception occurred.
@@ -64,9 +129,5 @@ public class JavaClient {
             Log.e("NFC-CLIENT", "Could not generate sha256 hash!", e);
         }
         return null;
-    }
-
-    public void logout() {
-        //TODO: Send logout request to server
     }
 }

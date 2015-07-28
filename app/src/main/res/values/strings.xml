@@ -22,8 +22,6 @@
     <string name="status_mode">just started</string>
     <string name="status_current_mode">Current Mode:</string>
 
-    <string name="dialog_reader_message1">Waiting for a Tag.</string>
-    <string name="dialog_reader_message2">Waiting for a Tag..</string>
-    <string name="dialog_reader_message3">Waiting for a Tag&#8230;</string>
+    <string name="dialog_reader_message">Scanning for tags&#8230;</string>
     <string name="dialog_reader_title">Reader Mode</string>
 </resources>
